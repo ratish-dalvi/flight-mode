@@ -39,6 +39,7 @@ class NeuralNet:
                 self.update_wb(batch, eta)
 
             accuracy = np.mean([np.argmax(self.feedforward(x)) == y for x, y in val_data])
+
             print(f"Epoch {i}: Accuracy: {accuracy*100: .2f} %")
 
     def update_wb(self, batch, eta):
@@ -50,8 +51,8 @@ class NeuralNet:
             self.back_propagation(x, y)  # updates layer graditents with dw, db
 
         for l in self.layers[1:]:  # update weights
-            l.w = l.w - l.dw / len(batch) * eta
-            l.b = l.b - l.db / len(batch) * eta
+            l.w = l.w - (eta / len(batch)) * l.dw
+            l.b = l.b - (eta / len(batch)) * l.db
 
     def back_propagation(self, x, y):
 
