@@ -34,12 +34,12 @@ class NeuralNet:
 
         for i in range(epochs):
             np.random.shuffle(train_data)
-            for j in range(0, batchsize, len(train_data)):
+            for j in range(0, len(train_data), batchsize):
                 batch = train_data[j: j+batchsize]
                 self.update_wb(batch, eta)
 
             accuracy = np.mean([np.argmax(self.feedforward(x)) == y for x, y in val_data])
-            print(f"Epoch {i}: Accuracy: {accuracy}")
+            print(f"Epoch {i}: Accuracy: {accuracy*100: .2f} %")
 
     def update_wb(self, batch, eta):
         for l in self.layers:

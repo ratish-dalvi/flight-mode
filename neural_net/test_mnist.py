@@ -17,4 +17,4 @@ if __name__ == '__main__':
     trainy = map(target_ohe, trainy)
     # Inefficient, but break it into row by row
     train_data, test_data = list(zip(trainX, trainy)), list(zip(testX, testy))
-    NeuralNet([784, 30, 10]).train(train_data, test_data, epochs=10000, batchsize=32, eta=3)
+    NeuralNet([784, 30, 10]).train(train_data, test_data, epochs=50, batchsize=32, eta=1)
