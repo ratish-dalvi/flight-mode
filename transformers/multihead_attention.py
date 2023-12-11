@@ -3,7 +3,7 @@ import torch
 from torch import nn
 
 
-class MultiHeadAttention:
+class MultiHeadMaskedAttention:
 
     def __init__(self, embedding_size, num_heads):
         """
@@ -28,14 +28,10 @@ class MultiHeadAttention:
         Forward pass for the MultiHeadAttention layer.
 
         Args:
-            X (torch.Tensor): The input tensor with shape
-                              (batch_size, seq_length, embedding_size)
+            X (torch.Tensor): Input tensor with shape (batch_size, seq_length, embedding_size)
 
         Returns:
-            torch.Tensor: The output tensor after applying multi-head attention,
-                          with the same shape as the input tensor
-                          (batch_size, seq_length, embedding_size)
-        
+            torch.Tensor: Output tensor of shape (batch_size, seq_length, embedding_size)
         """
         batch_size, seq_length, embedding_size = X.size()
         num_heads = self.num_heads
@@ -67,14 +63,14 @@ class MultiHeadAttention:
 
         # Convert back to the original size and send through a linear layer
         attn_out = attn_out.view(batch_size, num_heads, seq_length, embedding_split)
-        attn_out = attn_out.transpose(1, 2).
+        attn_out = attn_out.transpose(1, 2)
         attn_out = attn_out.reshape(batch_size, seq_length, num_heads * embedding_split)
 
         return self.output_linear(attn_out)
 
 
 if __name__ == "__main__":
-    mha = MultiHeadAttention(embedding_size=64, num_heads=4)
+    mha = MultiHeadMaskedAttention(embedding_size=64, num_heads=4)
     X = torch.rand(16, 32, 64)    
     out = mha.forward(X)
 
