@@ -56,6 +56,10 @@ class Trainer:
         self.writer = SummaryWriter()
         
 
+    def save_model(self, save_path):
+        """Save the model to the specified path."""
+        torch.save(self.model.state_dict(), save_path)
+        
     def run(self):
 
         # setup the optimizer
