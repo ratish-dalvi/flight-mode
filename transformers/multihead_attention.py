@@ -23,7 +23,7 @@ class MultiHeadMaskedAttention:
         self.num_heads = num_heads
 
 
-    def forward(self, X):
+    def forward(self, x):
         """
         Forward pass for the MultiHeadAttention layer.
 
@@ -33,13 +33,13 @@ class MultiHeadMaskedAttention:
         Returns:
             torch.Tensor: Output tensor of shape (batch_size, seq_length, embedding_size)
         """
-        batch_size, seq_length, embedding_size = X.size()
+        batch_size, seq_length, embedding_size = x.size()
         num_heads = self.num_heads
 
         # Apply the linear layer of size embedding_size * embedding_size
-        K = self.keys_linear(X)
-        Q = self.queries_linear(X)
-        V = self.values_linear(X)
+        K = self.keys_linear(x)
+        Q = self.queries_linear(x)
+        V = self.values_linear(x)
 
         # For multi-head attention, split it into separate heads
         embedding_split = embedding_size // num_heads
