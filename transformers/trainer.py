@@ -6,14 +6,14 @@ from transformers import AutoTokenizer
 from transformer import Transformer
 from torch.utils.data import IterableDataset
 from torch.utils.data import DataLoader
-
+from torch.utils.tensorboard import SummaryWriter  
 
 
 class Enwik8Dataset(IterableDataset):
     def __init__(self, seq_len, tokenizer_name="gpt2"):
         # Load dataset information for streaming
-        self.dataset = load_dataset("enwik8", split='train', streaming=True)
-
+        self.dataset = load_dataset("c4", "en", split='train', streaming=True)  # enwik8
+        
         # Initialize tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -53,7 +53,8 @@ class Trainer:
             config['mult'], config['num_heads'], self.device
         )
         self.model = self.model.to(self.device)
-
+        self.writer = SummaryWriter()
+        
 
     def run(self):
 
@@ -70,7 +71,7 @@ class Trainer:
             self.train_dataset,
             # sampler=torch.utils.data.RandomSampler(
             #     self.train_dataset, replacement=True, num_samples=int(1e10)),
-            # shuffle=False,
+            # shuffle=True,
             pin_memory=True,
             batch_size=config["batch_size"],
             # num_workers=config["num_workers"],
@@ -101,12 +102,20 @@ class Trainer:
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config['grad_clip'])
             opt.step()
 
-            print(f"loss: {self.loss}")
             # self.trigger_callbacks('on_batch_end')
             self.iter_num += 1
             tnow = time.time()
             self.iter_dt = tnow - self.iter_time
             self.iter_time = tnow
+
+            if self.iter_num % config["save_every"] == 0:
+                self.save_model(f'model_checkpoint_{self.iter_num}.pt')
+
+            # Logging to TensorBoard
+            self.writer.add_scalar('Loss/train', self.loss.item(), self.iter_num)
+
+            # Optionally, add code here to compute and log evaluation loss
+            print(f"Iteration: {self.iter_num}, Training Loss: {self.loss.item()}")
 
             # termination conditions
             # if config.max_iters is not None and self.iter_num >= config.max_iters:
@@ -116,15 +125,16 @@ class Trainer:
 # model and config should be defined according to your requirements
 config = {
     "embedding_size": 128,
-    "context_length": 512,
-    "num_layers": 4,
+    "context_length": 256,
+    "num_layers": 12,
     "dropout": 0,
     "mult": 4,
-    "num_heads": 4,
+    "num_heads": 8,
     "lr": 0.0001,
-    "batch_size": 16,
+    "batch_size": 32,
     "num_workers": 8,
-    "grad_clip": 1
+    "grad_clip": 1,
+    "save_every": 50
 }
 
 training_instance = Trainer(config)
