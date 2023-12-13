@@ -59,6 +59,12 @@ class MultiHeadMaskedAttention(nn.Module):
 
         # Compute scaled dot product
         scaled_dot_product = torch.bmm(Q, K.transpose(1, 2)) / math.sqrt(embedding_size)
+
+        # Mask everything above the diagonal to prevent lookahead.
+        assert scaled_dot_product.size() == (batch_size * num_heads, seq_length, seq_length)
+        idxs = torch.triu_indices(seq_length, seq_length, offset=1)
+        scaled_dot_product[..., idxs[0], idxs[1]] = float('-inf')
+
         attention_probs = torch.softmax(scaled_dot_product, dim=2)
         attn_out = torch.bmm(attention_probs, V)
 
@@ -71,8 +77,8 @@ class MultiHeadMaskedAttention(nn.Module):
 
 
 if __name__ == "__main__":
-    mha = MultiHeadMaskedAttention(embedding_size=64, num_heads=4)
-    X = torch.rand(16, 32, 64)    
+    mha = MultiHeadMaskedAttention(embedding_size=4, num_heads=2)
+    X = torch.rand(6, 4, 4)    
     out = mha.forward(X)
 
     print(out.shape)

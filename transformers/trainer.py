@@ -88,7 +88,6 @@ class Trainer:
                 data_iter = iter(train_loader)
                 batch = next(data_iter)
 
-
             batch = [t.to(self.device) for t in batch]
         
             x, y = batch
