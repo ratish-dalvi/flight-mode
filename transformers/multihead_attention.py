@@ -3,7 +3,7 @@ import torch
 from torch import nn
 
 
-class MultiHeadMaskedAttention:
+class MultiHeadMaskedAttention(nn.Module):
 
     def __init__(self, embedding_size, num_heads):
         """
@@ -14,6 +14,7 @@ class MultiHeadMaskedAttention:
                 It must be divisible by `num_heads`
             num_heads (int): The number of attention heads.
         """
+        super().__init__()
 
         self.keys_linear = nn.Linear(embedding_size, embedding_size, bias=False)
         self.queries_linear = nn.Linear(embedding_size, embedding_size, bias=False)
