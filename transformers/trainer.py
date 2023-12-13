@@ -50,7 +50,7 @@ class Trainer:
         self.model = Transformer(
             config['embedding_size'], self.train_dataset.vocab_size,
             config['context_length'], config['num_layers'], config['dropout'],
-            config['mult'], config['num_heads']
+            config['mult'], config['num_heads'], self.device
         )
 
     def run(self):

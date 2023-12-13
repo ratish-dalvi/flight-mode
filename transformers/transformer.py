@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from multihead_attention import MultiHeadMaskedAttention
 from torch.nn.functional import cross_entropy
@@ -33,9 +34,11 @@ class Transformer(nn.Module):
     """ A basic Transformer using positional embeddings instead of encodings
     """
     def __init__(self, embedding_size, vocab_size, context_length, num_layers,
-                 dropout, mult, num_heads):
+                 dropout, mult, num_heads, device):
         super().__init__()
-                
+        self.vocab_size = vocab_size
+        self.device = device
+        
         self.token_embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embedding_size)
         self.pos_embedding = nn.Embedding(num_embeddings=context_length, embedding_dim=embedding_size)
     
@@ -47,14 +50,17 @@ class Transformer(nn.Module):
         
     def forward(self, x, y):
         token_embedding = self.token_embedding(x)  # batch_size, seq_length, embedding_size
-        pos_embedding = self.pos_embedding(x)  # batch_size, seq_length, embedding_size
+        batch_size, context_length = x.size()
+        pos_embedding = self.pos_embedding(
+            torch.arange(0, context_length, dtype=torch.long, device=self.device).unsqueeze(0)
+        )  # batch_size, seq_length, embedding_size
         x = token_embedding + pos_embedding
 
         x = self.blocks(x)
         x = self.layer_norm(x)
         logits = self.lm_head(x)
-
-        loss = cross_entropy(logits.view(-1, vocab_size), y.view(vocab_size))
         
+        # Get logits and y both into shape (batch_size * context_length, vocab_size)
+        loss = cross_entropy(logits.view(-1, self.vocab_size), y.view(-1))
         return logits, loss
 
