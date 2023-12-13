@@ -52,6 +52,8 @@ class Trainer:
             config['context_length'], config['num_layers'], config['dropout'],
             config['mult'], config['num_heads'], self.device
         )
+        self.model = self.model.to(self.device)
+
 
     def run(self):
 
