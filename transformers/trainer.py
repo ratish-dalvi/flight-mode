@@ -56,6 +56,12 @@ class Trainer:
         self.writer = SummaryWriter()
         
 
+    def load_model(self, load_path):
+        """Load the model from the specified path."""
+        state_dict = torch.load(load_path, map_location=self.device)
+        self.model.load_state_dict(state_dict)
+        print(f"Model loaded from {load_path}")
+        
     def save_model(self, save_path):
         """Save the model to the specified path."""
         torch.save(self.model.state_dict(), save_path)
@@ -125,6 +131,26 @@ class Trainer:
             # if config.max_iters is not None and self.iter_num >= config.max_iters:
             #    break
 
+
+    def generate_text(self, prompt, max_tokens=50, temperature=1):
+        """
+        Generate text given some initial text.
+        """
+        # Encode the initial text
+        input_ids = self.train_dataset.tokenizer.encode(
+            prompt, return_tensors="pt").to(self.device)
+
+        # Generate additional tokens
+        generated_ids = self.model.generate(input_ids, max_tokens, temperature=temperature)
+
+        # Decode the generated tokens to text
+        generated_text = self.train_dataset.tokenizer.decode(
+            generated_ids[0], skip_special_tokens=True
+        )
+        return generated_text
+
+    
+            
 # Example usage
 # model and config should be defined according to your requirements
 config = {
@@ -141,6 +167,14 @@ config = {
     "save_every": 50
 }
 
-training_instance = Trainer(config)
-training_instance.run()
+# training_instance = Trainer(config)
+# training_instance.run()
 
+
+# Example usage
+# training_instance is an instance of Trainer
+initial_text = "chaz perrera, who is the"
+test_instance = Trainer(config)
+test_instance.load_model("/tmp/model_checkpoint_120000.pt")
+generated_text = test_instance.generate_text(initial_text)
+print(generated_text)

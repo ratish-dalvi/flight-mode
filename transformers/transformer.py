@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from multihead_attention import MultiHeadMaskedAttention
-from torch.nn.functional import cross_entropy
+from torch.nn.functional import cross_entropy, softmax
 
 
 class Block(nn.Module):
@@ -48,7 +48,7 @@ class Transformer(nn.Module):
         self.lm_head = nn.Linear(embedding_size, vocab_size)
 
         
-    def forward(self, x, y):
+    def forward(self, x, y=None):
         token_embedding = self.token_embedding(x)  # batch_size, seq_length, embedding_size
         batch_size, context_length = x.size()
         pos_embedding = self.pos_embedding(
@@ -61,6 +61,20 @@ class Transformer(nn.Module):
         logits = self.lm_head(x)
         
         # Get logits and y both into shape (batch_size * context_length, vocab_size)
-        loss = cross_entropy(logits.view(-1, self.vocab_size), y.view(-1))
+        loss = 0
+        if y is not None:
+            loss = cross_entropy(logits.view(-1, self.vocab_size), y.view(-1))
         return logits, loss
 
+    
+    @torch.no_grad()
+    def generate(self, x, max_tokens, temperature=1.0):
+        self.eval()  # Ensure the model is in evaluation mode
+
+        for _ in range(max_tokens):
+            logits, _ = self(x)
+            logits = logits[:, -1, :] / temperature
+            probs = softmax(logits, dim=-1)
+            _, x_next = torch.topk(probs, k=1, dim=-1)
+            x = torch.cat((x, x_next), dim=1)
+        return x    
