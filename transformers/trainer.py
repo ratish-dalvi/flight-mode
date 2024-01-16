@@ -124,15 +124,17 @@ class Trainer:
             self.writer.add_scalar('Loss/train', self.loss.item(), self.iter_num)
             
             # Optionally, add code here to compute and log evaluation loss
-            print(f"Iteration: {self.iter_num}, Training Loss: {self.loss.item()}")
+            if self.iter_num % self.config["print_every"] == 0:
+                print(f"Iteration: {self.iter_num}, Training Loss: {self.loss.item()}")
 
 
     def evaluate(self):
-        """Evaluate the model on a couple of set prompts"""        
+        """Evaluate the model on a couple of set prompts"""
+        print("\n")
         for prompt in self.config["evaluation_prompts"]:
-            generated_text = self.generate_text(initial_text)
+            generated_text = self.generate_text(prompt)
             print(generated_text)
-
+            print("\n")
 
     def generate_text(self, prompt, max_tokens=50, temperature=1):
         """
@@ -163,18 +165,19 @@ def parse_args(default_config):
 def main():
     # Default configuration
     default_config = {
-        "embedding_size": 768,
+        "embedding_size": 384,
         "context_length": 512,
         "num_layers": 12,
         "dropout": 0,
         "mult": 4,
         "num_heads": 12,
         "lr": 0.0003,
-        "batch_size": 32,
+        "batch_size": 16,
         "num_workers": 8,
         "grad_clip": 1,
-        "save_every": 100,
-        "evaluate_prompts": ["Once upon a time, ", "The president of the united states is"]
+        "print_every": 200,
+        "save_every": 5000,
+        "evaluation_prompts": ["Once upon a time, ", "The president of the united states is", "The best thing about"]
     }
 
     args = parse_args(default_config)
