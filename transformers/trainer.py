@@ -1,4 +1,5 @@
 import time
+import argparse
 import torch
 from torch.utils.data import Dataset
 from datasets import load_dataset
@@ -9,11 +10,11 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter  
 
 
-class Enwik8Dataset(IterableDataset):
-    def __init__(self, seq_len, tokenizer_name="gpt2"):
+class C4Dataset(IterableDataset):
+    def __init__(self, seq_len, tokenizer_name="gpt2", split='train'):
         # Load dataset information for streaming
-        self.dataset = load_dataset("c4", "en", split='train', streaming=True)  # enwik8
-        
+        self.dataset = load_dataset("c4", "en", split=split, streaming=True)
+
         # Initialize tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -26,6 +27,8 @@ class Enwik8Dataset(IterableDataset):
         # Iterator over the dataset
         for data in self.dataset:
             # Tokenize text on-the-fly
+            if len(data['text']) < self.seq_len:
+                continue
             tokens = self.tokenizer.encode(data['text'], add_special_tokens=False)
 
             # Split into sequences of the desired length
@@ -43,8 +46,8 @@ class Trainer:
         self.config = config
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        # Initialize Enwik8Dataset
-        self.train_dataset = Enwik8Dataset(config['context_length'], tokenizer_name="gpt2")
+        # Initialize C4Dataset
+        self.train_dataset = C4Dataset(config['context_length'], split="train")
         print("Initialized dataset")
         
         self.model = Transformer(
@@ -72,25 +75,17 @@ class Trainer:
         print(f"Model: {self.model}")
         print(f"Model parameters: {self.model.parameters()}")
 
-        opt = torch.optim.Adam(lr=config["lr"], params=self.model.parameters())
-
-        # self.optimizer = model.configure_optimizers(config)
+        opt = torch.optim.Adam(lr=self.config["lr"], params=self.model.parameters())
 
         # setup the dataloader
         train_loader = DataLoader(
-            self.train_dataset,
-            # sampler=torch.utils.data.RandomSampler(
-            #     self.train_dataset, replacement=True, num_samples=int(1e10)),
-            # shuffle=True,
-            pin_memory=True,
-            batch_size=config["batch_size"],
-            # num_workers=config["num_workers"],
-        )
+            self.train_dataset, pin_memory=True, batch_size=self.config["batch_size"])
 
         self.model.train()
         self.iter_num = 0
         self.iter_time = time.time()
         data_iter = iter(train_loader)
+        
         while True:
             # fetch the next batch (x, y) and re-init iterator if needed
             try:
@@ -107,29 +102,33 @@ class Trainer:
             logits, self.loss = self.model(x, y)
 
             # backprop and update the parameters
-            self.model.zero_grad(set_to_none=True)
+            # self.model.zero_grad(set_to_none=True)
+            opt.zero_grad()
             self.loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config['grad_clip'])
             opt.step()
 
-            # self.trigger_callbacks('on_batch_end')
             self.iter_num += 1
             tnow = time.time()
             self.iter_dt = tnow - self.iter_time
             self.iter_time = tnow
 
-            if self.iter_num % config["save_every"] == 0:
+            if self.iter_num % self.config["save_every"] == 0:
                 self.save_model(f'model_checkpoint_{self.iter_num}.pt')
-
+                self.evaluate()
+                
             # Logging to TensorBoard
             self.writer.add_scalar('Loss/train', self.loss.item(), self.iter_num)
-
+            
             # Optionally, add code here to compute and log evaluation loss
             print(f"Iteration: {self.iter_num}, Training Loss: {self.loss.item()}")
 
-            # termination conditions
-            # if config.max_iters is not None and self.iter_num >= config.max_iters:
-            #    break
+
+    def evaluate(self):
+        """Evaluate the model on a couple of set prompts"""        
+        for prompt in self.config["evaluation_prompts"]:
+            generated_text = self.generate_text(initial_text)
+            print(generated_text)
 
 
     def generate_text(self, prompt, max_tokens=50, temperature=1):
@@ -140,9 +139,11 @@ class Trainer:
         input_ids = self.train_dataset.tokenizer.encode(
             prompt, return_tensors="pt").to(self.device)
 
+        st = time.time()
         # Generate additional tokens
         generated_ids = self.model.generate(input_ids, max_tokens, temperature=temperature)
-
+        print(f"Text generated at {generated_ids.shape[1]/(time.time() - st):.1f} tokens/second")
+        
         # Decode the generated tokens to text
         generated_text = self.train_dataset.tokenizer.decode(
             generated_ids[0], skip_special_tokens=True
@@ -150,31 +151,36 @@ class Trainer:
         return generated_text
 
     
-            
-# Example usage
-# model and config should be defined according to your requirements
-config = {
-    "embedding_size": 128,
-    "context_length": 256,
-    "num_layers": 12,
-    "dropout": 0,
-    "mult": 4,
-    "num_heads": 8,
-    "lr": 0.0001,
-    "batch_size": 32,
-    "num_workers": 8,
-    "grad_clip": 1,
-    "save_every": 50
-}
+def parse_args(default_config):
+    parser = argparse.ArgumentParser(description='Train a Transformer model from scratch')
+    for key, value in default_config.items():
+        parser.add_argument(f'--{key}', type=type(value), default=value)
+    return parser.parse_args()
 
-# training_instance = Trainer(config)
-# training_instance.run()
+def main():
+    # Default configuration
+    default_config = {
+        "embedding_size": 128,
+        "context_length": 256,
+        "num_layers": 12,
+        "dropout": 0,
+        "mult": 4,
+        "num_heads": 8,
+        "lr": 0.0001,
+        "batch_size": 32,
+        "num_workers": 8,
+        "grad_clip": 1,
+        "save_every": 100,
+        "evaluate_prompts": ["Once upon a time, ", "The president of the united states is"]
+    }
 
+    args = parse_args(default_config)
 
-# Example usage
-# training_instance is an instance of Trainer
-initial_text = "chaz perrera, who is the"
-test_instance = Trainer(config)
-test_instance.load_model("/tmp/model_checkpoint_120000.pt")
-generated_text = test_instance.generate_text(initial_text)
-print(generated_text)
+    # Override defaults with any command-line arguments
+    config = {key: getattr(args, key) for key in default_config}
+
+    training_instance = Trainer(config)
+    training_instance.run()
+
+if __name__ == "__main__":
+    main()

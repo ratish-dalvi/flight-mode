@@ -80,6 +80,4 @@ if __name__ == "__main__":
     mha = MultiHeadMaskedAttention(embedding_size=4, num_heads=2)
     X = torch.rand(6, 4, 4)    
     out = mha.forward(X)
-
     print(out.shape)
-    print(out)

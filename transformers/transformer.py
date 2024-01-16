@@ -49,12 +49,15 @@ class Transformer(nn.Module):
 
         
     def forward(self, x, y=None):
-        token_embedding = self.token_embedding(x)  # batch_size, seq_length, embedding_size
         batch_size, context_length = x.size()
-        pos_embedding = self.pos_embedding(
-            torch.arange(0, context_length, dtype=torch.long, device=self.device).unsqueeze(0)
-        )  # batch_size, seq_length, embedding_size
-        x = token_embedding + pos_embedding
+        token_embedding = self.token_embedding(x)  # size: (batch_size, context_length, embedding_size)
+
+        p = torch.arange(0, context_length, dtype=torch.long, device=self.device).unsqueeze(0)
+        # p has size (1, context_length)
+        pos_embedding = self.pos_embedding(p)  # Size: (1, context_length, embedding_size)
+        
+        # Add position embedding to every sequence in batch
+        x = token_embedding + pos_embedding  # # Size: (batch_size, context_length, embedding_size)
 
         x = self.blocks(x)
         x = self.layer_norm(x)
