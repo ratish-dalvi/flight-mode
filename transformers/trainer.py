@@ -73,7 +73,10 @@ class Trainer:
 
         # setup the optimizer
         print(f"Model: {self.model}")
-        print(f"Model parameters: {self.model.parameters()}")
+        num_parameters = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        num_parameters2 = sum(p.numel() for p in self.model.parameters())
+        
+        print(f"The Transformer model has {num_parameters / 1000000: .2f} M trainable parameters.")
 
         opt = torch.optim.Adam(lr=self.config["lr"], params=self.model.parameters())
 
@@ -160,13 +163,13 @@ def parse_args(default_config):
 def main():
     # Default configuration
     default_config = {
-        "embedding_size": 128,
-        "context_length": 256,
+        "embedding_size": 768,
+        "context_length": 512,
         "num_layers": 12,
         "dropout": 0,
         "mult": 4,
-        "num_heads": 8,
-        "lr": 0.0001,
+        "num_heads": 12,
+        "lr": 0.0003,
         "batch_size": 32,
         "num_workers": 8,
         "grad_clip": 1,
