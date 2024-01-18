@@ -18,7 +18,7 @@ class C4Dataset(IterableDataset):
         # Initialize tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.vocab_size = len(self.tokenizer)
+        self.vocab_size = self.tokenizer.vocab_size
 
         # Sequence length
         self.seq_len = seq_len
@@ -130,12 +130,18 @@ class Trainer:
 
     def evaluate(self):
         """Evaluate the model on a couple of set prompts"""
-        print("\n")
-        for prompt in self.config["evaluation_prompts"]:
-            generated_text = self.generate_text(prompt)
-            print(generated_text)
-            print("\n")
+        self.model.eval()
 
+        print("\n")
+        with torch.no_grad():  # Disable gradient computation
+            for prompt in self.config["evaluation_prompts"]:
+                generated_text = self.generate_text(prompt)
+                print(generated_text)
+                print("\n")
+
+        # Set the model back to training mode
+        self.model.train()
+                
     def generate_text(self, prompt, max_tokens=50, temperature=1):
         """
         Generate text given some initial text.
