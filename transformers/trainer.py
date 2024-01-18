@@ -63,6 +63,7 @@ class Trainer:
         """Load the model from the specified path."""
         state_dict = torch.load(load_path, map_location=self.device)
         self.model.load_state_dict(state_dict)
+        self.model.to(self.device)
         print(f"Model loaded from {load_path}")
         
     def save_model(self, save_path):
