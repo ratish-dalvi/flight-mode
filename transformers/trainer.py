@@ -45,6 +45,7 @@ class Trainer:
         
         self.config = config
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        print(f"Device: {self.device}")
 
         # Initialize C4Dataset
         self.train_dataset = C4Dataset(config['context_length'], split="train")
@@ -150,6 +151,8 @@ class Trainer:
         # Encode the initial text
         input_ids = self.train_dataset.tokenizer.encode(
             prompt, return_tensors="pt").to(self.device)
+        print(input_ids)
+        print(input_ids.shape)
 
         st = time.time()
         # Generate additional tokens

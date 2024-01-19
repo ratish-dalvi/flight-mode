@@ -48,9 +48,9 @@ class Transformer(nn.Module):
         self.lm_head = nn.Linear(embedding_size, vocab_size)
 
         
-    def forward(self, x, y=None):
-        batch_size, context_length = x.size()
-        token_embedding = self.token_embedding(x)  # size: (batch_size, context_length, embedding_size)
+    def forward(self, input_ids, labels=None):
+        batch_size, context_length = input_ids.size()
+        token_embedding = self.token_embedding(input_ids)  # size: (batch_size, context_length, embedding_size)
 
         p = torch.arange(0, context_length, dtype=torch.long, device=self.device).unsqueeze(0)
         # p has size (1, context_length)
@@ -65,9 +65,11 @@ class Transformer(nn.Module):
         
         # Get logits and y both into shape (batch_size * context_length, vocab_size)
         loss = 0
-        if y is not None:
-            loss = cross_entropy(logits.view(-1, self.vocab_size), y.view(-1))
-        return logits, loss
+        if labels is not None:
+            loss = cross_entropy(logits.view(-1, self.vocab_size), labels.view(-1))
+            return {"loss": loss}
+
+        return logits
 
     
     @torch.no_grad()
