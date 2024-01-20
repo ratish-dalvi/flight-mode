@@ -19,7 +19,7 @@ def load_and_split_dataset(tokenizer, seq_len, split_ratio=0.1, dataset_percent=
     dataset = load_dataset("openwebtext", split=split)    
     # Tokenize the dataset. For full dataset, takes ~30 mins the first time
     tokenized_dataset = dataset.map(
-        tokenize_function, batched=True, batch_size=10000, remove_columns=['text'])
+        tokenize_function, batched=True, batch_size=100000, remove_columns=['text'])
     
     print(f"Full tokenized dataset: {tokenized_dataset}")    
     print("\nSplitting dataset into train/eval ...") # for full dataset, takes ~5 mins the first time
@@ -111,8 +111,8 @@ if __name__ == "__main__":
         # Transformer parameters
         "embedding_size": 384,
         "context_length": 512,
-        "num_layers": 12,
-        "dropout": 0,
+        "num_layers": 16,
+        "dropout": 0.1,
         "mult": 4,
         "num_heads": 12,
 
@@ -124,11 +124,11 @@ if __name__ == "__main__":
         "warmup_steps": 500,
         "weight_decay": 0.01,
         "logging_dir": './logs',
-        "logging_steps": 1000,
-        "save_steps": 20000,
-        "gradient_accumulation_steps": 2,
+        "logging_steps": 500,
+        "save_steps": 5000,
+        "gradient_accumulation_steps": 1,
         # Data parameters
-        "split_ratio": 0.1,
+        "split_ratio": 0.04,
         "dataset_percent": None,  # all
     }
 
