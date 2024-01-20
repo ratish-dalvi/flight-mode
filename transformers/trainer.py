@@ -80,6 +80,8 @@ def run(config):
         weight_decay=config["weight_decay"],
         logging_dir=config["logging_dir"],
         logging_steps=config["logging_steps"],
+        save_steps=config["save_steps"],
+        gradient_accumulation_steps=config["gradient_accumulation_steps"],
     )
 
     # Initialize Trainer
@@ -122,10 +124,12 @@ if __name__ == "__main__":
         "warmup_steps": 500,
         "weight_decay": 0.01,
         "logging_dir": './logs',
-        "logging_steps": 100,
+        "logging_steps": 1000,
+        "save_steps": 20000,
+        "gradient_accumulation_steps": 2,
         # Data parameters
         "split_ratio": 0.1,
-        "dataset_percent": 1,
+        "dataset_percent": None,  # all
     }
 
     args = parse_args(default_config)
