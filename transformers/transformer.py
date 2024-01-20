@@ -77,7 +77,7 @@ class Transformer(nn.Module):
         self.eval()  # Ensure the model is in evaluation mode
 
         for _ in range(max_tokens):
-            logits, _ = self(x)
+            logits = self(x)
             logits = logits[:, -1, :] / temperature
             probs = softmax(logits, dim=-1)
             _, x_next = torch.topk(probs, k=1, dim=-1)

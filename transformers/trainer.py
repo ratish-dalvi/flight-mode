@@ -11,6 +11,33 @@ import torch
 from transformer import Transformer
 
 
+DEFAULT_CONFIG = {
+
+    # Transformer parameters
+    "embedding_size": 384,
+    "context_length": 512,
+    "num_layers": 12,
+    "dropout": 0,
+    "mult": 4,
+    "num_heads": 12,
+
+    # trainer parameters
+    "output_dir": "./model_output",
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 16,
+    "per_device_eval_batch_size": 16,
+    "warmup_steps": 500,
+    "weight_decay": 0.01,
+    "logging_dir": './logs',
+    "logging_steps": 1000,
+    "save_steps": 20000,
+    "gradient_accumulation_steps": 2,
+    # Data parameters
+    "split_ratio": 0.1,
+    "dataset_percent": None,  # all
+}
+
+
 def load_and_split_dataset(tokenizer, seq_len, split_ratio=0.1, dataset_percent=None):
     def tokenize_function(examples):
         return tokenizer(examples['text'], truncation=True, max_length=seq_len, padding='max_length')
@@ -106,33 +133,7 @@ def parse_args(default_config):
 
 if __name__ == "__main__":
 
-    default_config = {
-
-        # Transformer parameters
-        "embedding_size": 384,
-        "context_length": 512,
-        "num_layers": 12,
-        "dropout": 0,
-        "mult": 4,
-        "num_heads": 12,
-
-        # trainer parameters
-        "output_dir": "./model_output",
-        "num_train_epochs": 3,
-        "per_device_train_batch_size": 16,
-        "per_device_eval_batch_size": 16,
-        "warmup_steps": 500,
-        "weight_decay": 0.01,
-        "logging_dir": './logs',
-        "logging_steps": 1000,
-        "save_steps": 20000,
-        "gradient_accumulation_steps": 2,
-        # Data parameters
-        "split_ratio": 0.1,
-        "dataset_percent": None,  # all
-    }
-
-    args = parse_args(default_config)
+    args = parse_args(DEFAULT_CONFIG)
     # Override defaults with any command-line arguments
-    config = {key: getattr(args, key) for key in default_config}
+    config = {key: getattr(args, key) for key in DEFAULT_CONFIG}
     run(config)
