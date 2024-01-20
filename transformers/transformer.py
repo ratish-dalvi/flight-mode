@@ -8,7 +8,7 @@ class Block(nn.Module):
     """ A simple Transformer block, inspired by gpt2
     """
 
-    def __init__(self, embedding_size, num_heads, dropout, mult):
+    def __init__(self, embedding_size, num_heads, dropout):
         super().__init__()
 
         self.ln1 = nn.LayerNorm(normalized_shape=embedding_size)
@@ -16,17 +16,15 @@ class Block(nn.Module):
         self.attn = MultiHeadMaskedAttention(embedding_size, num_heads)
 
         self.mlp = nn.Sequential(
-            nn.Linear(embedding_size, mult * embedding_size),
+            nn.Linear(embedding_size, 4 * embedding_size),
             nn.GELU(),
-            nn.Linear(mult * embedding_size, embedding_size),
+            nn.Linear(4 * embedding_size, embedding_size),
             nn.Dropout(dropout)
         )
 
     def forward(self, x):
-
-        x = self.ln1(self.attn(x) + x)
-        x = self.ln2(self.mlp(x) + x)
-
+        x = x + self.attn(self.ln1(x))
+        x = x + self.mlp(self.ln2(x))
         return x
 
     
@@ -34,7 +32,7 @@ class Transformer(nn.Module):
     """ A basic Transformer using positional embeddings instead of encodings
     """
     def __init__(self, embedding_size, vocab_size, context_length, num_layers,
-                 dropout, mult, num_heads, device):
+                 dropout, num_heads, device):
         super().__init__()
         self.vocab_size = vocab_size
         self.device = device
@@ -42,10 +40,10 @@ class Transformer(nn.Module):
         self.token_embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embedding_size)
         self.pos_embedding = nn.Embedding(num_embeddings=context_length, embedding_dim=embedding_size)
     
-        blocks = [Block(embedding_size, num_heads, dropout, mult) for i in range(num_layers)]
+        blocks = [Block(embedding_size, num_heads, dropout) for i in range(num_layers)]
         self.blocks = nn.Sequential(*blocks)
         self.layer_norm = nn.LayerNorm(embedding_size)        
-        self.lm_head = nn.Linear(embedding_size, vocab_size)
+        self.lm_head = nn.Linear(embedding_size, vocab_size) reuse token embeddings instead
 
         
     def forward(self, input_ids, labels=None):
@@ -61,7 +59,7 @@ class Transformer(nn.Module):
 
         x = self.blocks(x)
         x = self.layer_norm(x)
-        logits = self.lm_head(x)
+        logits = self.lm_head(x)  # TODO Should we reuse token embeddings to save parameters
         
         # Get logits and y both into shape (batch_size * context_length, vocab_size)
         loss = 0

@@ -14,11 +14,10 @@ from transformer import Transformer
 DEFAULT_CONFIG = {
 
     # Transformer parameters
-    "embedding_size": 384,
-    "context_length": 512,
-    "num_layers": 16,
-    "dropout": 0,
-    "mult": 4,
+    "embedding_size": 768,
+    "context_length": 1024,
+    "num_layers": 12,
+    "dropout": 0.1,
     "num_heads": 12,
 
     # trainer parameters
@@ -32,6 +31,7 @@ DEFAULT_CONFIG = {
     "logging_steps": 500,
     "save_steps": 10000,
     "gradient_accumulation_steps": 1,
+    
     # Data parameters
     "split_ratio": 0.04,
     "dataset_percent": None,  # full dataset
@@ -83,6 +83,7 @@ def run(config):
 
     # Initialize the custom data collator
     data_collator = CustomDataCollatorForLanguageModeling()
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -92,11 +93,12 @@ def run(config):
         config['context_length'],
         config['num_layers'],
         config['dropout'],
-        config['mult'],
         config['num_heads'],
         device
     )
+    print(f"Number of parameters: {sum(p.numel() for p in model.parameters())/1e6:.1f} M")
 
+    
     # Define training arguments
     training_args = TrainingArguments(
         output_dir=config["output_dir"],
