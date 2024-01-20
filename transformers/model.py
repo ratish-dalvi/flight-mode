@@ -121,7 +121,6 @@ class Transformer(nn.Module):
         logits = self.lm_head(x)  # TODO Should we reuse token embeddings to save parameters
         
         # Get logits and y both into shape (batch_size * context_length, vocab_size)
-        loss = 0
         if labels is not None:
             loss = cross_entropy(logits.view(-1, self.vocab_size), labels.view(-1))
             return {"loss": loss}

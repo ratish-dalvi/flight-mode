@@ -7,15 +7,14 @@ from transformers import AutoTokenizer, DataCollatorForLanguageModeling
 from transformers import AutoTokenizer, Trainer, TrainingArguments
 import torch
 
-
-from transformer import Transformer
+from model import Transformer
 
 
 DEFAULT_CONFIG = {
 
     # Transformer parameters
     "embedding_size": 768,
-    "context_length": 1024,
+    "context_length": 512,
     "num_layers": 12,
     "dropout": 0.1,
     "num_heads": 12,
@@ -83,9 +82,7 @@ def run(config):
 
     # Initialize the custom data collator
     data_collator = CustomDataCollatorForLanguageModeling()
-
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 
     model = Transformer(
         config['embedding_size'],
@@ -97,7 +94,6 @@ def run(config):
         device
     )
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters())/1e6:.1f} M")
-    print(model)
     
     # Define training arguments
     training_args = TrainingArguments(
