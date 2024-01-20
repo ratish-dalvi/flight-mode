@@ -1,9 +1,68 @@
+import math
+
 import torch
 from torch import nn
-from multihead_attention import MultiHeadMaskedAttention
 from torch.nn.functional import cross_entropy, softmax
 
 
+class MultiHeadMaskedAttention(nn.Module):
+
+    def __init__(self, embedding_size, num_heads):
+
+        super().__init__()
+
+        self.keys_linear = nn.Linear(embedding_size, embedding_size, bias=False)
+        self.queries_linear = nn.Linear(embedding_size, embedding_size, bias=False)
+        self.values_linear = nn.Linear(embedding_size, embedding_size, bias=False)
+        self.output_linear = nn.Linear(embedding_size, embedding_size)
+
+        self.num_heads = num_heads
+
+
+    def forward(self, x):
+
+        batch_size, seq_length, embedding_size = x.size()
+        num_heads = self.num_heads
+
+        # Apply the linear layer of size embedding_size * embedding_size
+        K = self.keys_linear(x)
+        Q = self.queries_linear(x)
+        V = self.values_linear(x)
+
+        # For multi-head attention, split it into separate heads
+        embedding_split = embedding_size // num_heads
+
+        # Reshape: split the embedding into `num_heads` parts
+        K = K.view(batch_size, seq_length, num_heads, embedding_split)
+        Q = Q.view(batch_size, seq_length, num_heads, embedding_split)
+        V = Q.view(batch_size, seq_length, num_heads, embedding_split)
+
+        # Create 3D tensors containing arrays of seq_length * embedding_split arrays.
+        # The easiest way is to swap 2nd and 3rd dimensions, and reshape them to flatten
+        # the first two dimensions (which are batch_size, and num_heads after the swap)
+        K = K.transpose(1, 2).reshape(batch_size * num_heads, seq_length, embedding_split)
+        Q = Q.transpose(1, 2).reshape(batch_size * num_heads, seq_length, embedding_split)
+        V = V.transpose(1, 2).reshape(batch_size * num_heads, seq_length, embedding_split)
+
+        # Compute scaled dot product
+        scaled_dot_product = torch.bmm(Q, K.transpose(1, 2)) / math.sqrt(embedding_size)
+
+        # Mask everything above the diagonal to prevent lookahead.
+        assert scaled_dot_product.size() == (batch_size * num_heads, seq_length, seq_length)
+        idxs = torch.triu_indices(seq_length, seq_length, offset=1)
+        scaled_dot_product[..., idxs[0], idxs[1]] = float('-inf')
+
+        attention_probs = torch.softmax(scaled_dot_product, dim=2)
+        attn_out = torch.bmm(attention_probs, V)
+
+        # Convert back to the original size and send through a linear layer
+        attn_out = attn_out.view(batch_size, num_heads, seq_length, embedding_split)
+        attn_out = attn_out.transpose(1, 2)
+        attn_out = attn_out.reshape(batch_size, seq_length, num_heads * embedding_split)
+
+        return self.output_linear(attn_out)
+
+    
 class Block(nn.Module):
     """ A simple Transformer block, inspired by gpt2
     """
@@ -43,7 +102,7 @@ class Transformer(nn.Module):
         blocks = [Block(embedding_size, num_heads, dropout) for i in range(num_layers)]
         self.blocks = nn.Sequential(*blocks)
         self.layer_norm = nn.LayerNorm(embedding_size)        
-        self.lm_head = nn.Linear(embedding_size, vocab_size) reuse token embeddings instead
+        self.lm_head = nn.Linear(embedding_size, vocab_size)  # reuse token embeddings instead
 
         
     def forward(self, input_ids, labels=None):

@@ -97,7 +97,7 @@ def run(config):
         device
     )
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters())/1e6:.1f} M")
-
+    print(model)
     
     # Define training arguments
     training_args = TrainingArguments(
